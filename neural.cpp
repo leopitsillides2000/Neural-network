@@ -21,23 +21,27 @@ int main(){
     return 0;
 }
 
-class NeuralNetwork{
+class SingleExampleNeuralNetwork{
     public:
 
         //attributes for the NeuralNetwork class
-        vector<float> input;
+        vector<float> input; 
         vector<vector<float>> weights1; //dimension (size of hidden layer, size of input)
+        vector<float> bias1; // size of hidden layer
         vector<vector<float>> weights2; //dimension (size of output, size of hidden layer)
-        vector<float> output;
+        vector<float> bias2; // size of output
+        vector<float> layer1;
+        vector<float> output; 
         vector<float> Y_vals;
         float lr = 0.5; //learning rate could be an attribute to class object
 
         //activation function: sigmoid
         static float sigmoid(float x){
+            return 1/(1+exp(-x));
+        }
 
-            float val = 1/(1+exp(-x));
-
-            return val;
+        static float inv_sigmoid(float x){
+            return -log(1/x - 1);
         }
 
         //calculates dot product for application iun feedforward
@@ -54,20 +58,16 @@ class NeuralNetwork{
         }
 
         //outputs a new layer given the original layer and the weights
-        static vector<float> apply_weights(vector<float> layer, vector<vector<float>> weights){
+        static vector<float> apply_weights(vector<float> layer, vector<vector<float>> weights, vector<float> bias){
             vector<float> new_layer;
 
-            int n = weights.size();
-
-            cout << n << endl; //debug
-
-            cout << "before" << endl; //debug
+            int n = weights.size(); //this might be weights[0] e.g. vector that is length of next layer
 
             //for each node in new_layer calculate the dot product of the orignal layer with the weights
             for (int i=0; i<n; i++){
 
                 //new_layer[i] = sigmoid(dot_product(layer, weights[i]));
-                new_layer.insert(new_layer.end(), sigmoid(dot_product(layer, weights[i]))); ///////Vectors are not indexable in c++
+                new_layer.insert(new_layer.end(), sigmoid(dot_product(layer, weights[i]) + bias[i])); ///////Vectors are not indexable in c++
 
                 //debug segmentation fault
                 cout << i << ": " << new_layer[i] << endl;
@@ -78,65 +78,56 @@ class NeuralNetwork{
 
 
         void feedforward(){
-            //calculates first layer
-            vector<float> layer1 = apply_weights(input, weights1);
+
+            //calculates hidden layer
+            layer1 = apply_weights(input, weights1, bias1);
             //calculates output layer
-            output = apply_weights(layer1, weights2);
+            output = apply_weights(layer1, weights2, bias2);
+            
         }
 
-        static float sigmoid_der(float x){
-            return sigmoid(x)*(1-sigmoid(x));
+        static float sigmoid_der(float z){
+            return sigmoid(z)*(1-sigmoid(z));
         }
 
-        float mse(vector<float> y_true, vector<float> y_check){
-            float error;
-            int n = y_true.size();
-
-            for (int i = 0; i < n; i++){
-                error += pow(y_check[i] - y_true[i], 2);
-            }
-            return error/n;
-        }
-
-        float error(float y_true, float y_out){
-            return 1/2*pow((y_true - y_out),2);
-        }
-
-        void grad_descent(float weight, float z, float a){
-            weight = weight - a*sigmoid_der(z);
-        }
-
-        //Little cofused!! Do you need to feed forward for each training example first then do the back prpagation
-        //Or do you apply the backpropogation after the feedforard of each training example?
-        static void update_weights(vector<float> current_layer, vector<float> true_layer, vector<vector<float>> current_weights){
-            //for each output node
-                //calculate error for each output node
-                //adjusts weights accordingly using grad descent
-
+        vector<float> update(vector<float> current_layer, vector<float> prev_layer, vector<vector<float>> current_weights, vector<float> current_bias, vector<float> Y_true){
+            //for each node(j)
             int n = current_layer.size();
+            int m = current_weights[0].size();
+            vector<float> new_prev_layer; //need to calc prev layer with new weights and bias to apply update to each layer
 
-            for (i=0;i<n;i++){
-                //calculate error for each output node
-                float cost = error(true_layer[i], current_layer[i]);
 
-                int m = current_weights[i].size();
+            for (int j=0;j<n;j++){
+                
+                //term derived from chain rule
+                //for gradient descent all updated parts(bias/weights/neurons) share this term
+                float descent = 2*lr*sigmoid_der(inv_sigmoid(current_layer[j]))*(current_layer[j]-Y_true[j]); //maybe have to abs last part
 
-                for (j=0;j<m;j++){
-                    //applies change of weights in-place
-                    grad_descent(current_weights[i][j], cost, lr); //this is a little inefficent as the sigmoid_der is calculated eachh time despite z/cost being unchanged
+                //update bias
+                current_bias[j] = current_bias[j] - descent;
+
+                for (int k=0;k<m;k++){
+                    //update weight
+                    float new_weight = current_weights[j][k] - prev_layer[k]*descent;
+                    current_weights[j][k] = new_weight;
+
+                    //keep track of updated nodes
+                    new_prev_layer[k] = prev_layer[k] - new_weight*descent;
                 }
             }
-            
+
+
+        return new_prev_layer; //may need to return new_prev_layer to use it again
         }
 
-        void backprop(){
-            
-
+        void back_prop(){
+            vector<float> pre_layer = update(output, layer1, weights2, bias2, Y_vals);
+            vector<float> pre_pre_layer = update(layer1, input, weights1, bias1, pre_layer);
         }
     };
 
 void test_feedforward(){
-    NeuralNetwork neural;
+    SingleExampleNeuralNetwork neural;
 
     //initialising input and weights
     neural.input = {1.0,2.0,3.0};
