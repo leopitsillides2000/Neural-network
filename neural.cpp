@@ -29,6 +29,8 @@ class NeuralNetwork{
         vector<vector<float>> weights1; //dimension (size of hidden layer, size of input)
         vector<vector<float>> weights2; //dimension (size of output, size of hidden layer)
         vector<float> output;
+        vector<float> Y_vals;
+        float lr = 0.5; //learning rate could be an attribute to class object
 
         //activation function: sigmoid
         static float sigmoid(float x){
@@ -41,7 +43,7 @@ class NeuralNetwork{
         //calculates dot product for application iun feedforward
         static float dot_product(vector<float> x_vec, vector<float> y_vec){
 
-            int n = sizeof(x_vec)/sizeof(x_vec[0]); //sizeof gives number of bytes so must divide by the number of bytes of the data type in the vector
+            int n = x_vec.size();
             float total = 0;
 
             for (int i = 0; i<n; i++){
@@ -55,7 +57,7 @@ class NeuralNetwork{
         static vector<float> apply_weights(vector<float> layer, vector<vector<float>> weights){
             vector<float> new_layer;
 
-            int n = sizeof(weights)/sizeof(weights[0]); /////////////This is giving the wrong output
+            int n = weights.size();
 
             cout << n << endl; //debug
 
@@ -88,7 +90,7 @@ class NeuralNetwork{
 
         float mse(vector<float> y_true, vector<float> y_check){
             float error;
-            int n = sizeof(y_true)/sizeof(y_true[0]);
+            int n = y_true.size();
 
             for (int i = 0; i < n; i++){
                 error += pow(y_check[i] - y_true[i], 2);
@@ -96,11 +98,39 @@ class NeuralNetwork{
             return error/n;
         }
 
-        //void grad_descent(float weight, float z, float a){
-        //    weight = weight - a*sigmoid_der(z);
-        //}
+        float error(float y_true, float y_out){
+            return 1/2*pow((y_true - y_out),2);
+        }
+
+        void grad_descent(float weight, float z, float a){
+            weight = weight - a*sigmoid_der(z);
+        }
+
+        //Little cofused!! Do you need to feed forward for each training example first then do the back prpagation
+        //Or do you apply the backpropogation after the feedforard of each training example?
+        static void update_weights(vector<float> current_layer, vector<float> true_layer, vector<vector<float>> current_weights){
+            //for each output node
+                //calculate error for each output node
+                //adjusts weights accordingly using grad descent
+
+            int n = current_layer.size();
+
+            for (i=0;i<n;i++){
+                //calculate error for each output node
+                float cost = error(true_layer[i], current_layer[i]);
+
+                int m = current_weights[i].size();
+
+                for (j=0;j<m;j++){
+                    //applies change of weights in-place
+                    grad_descent(current_weights[i][j], cost, lr); //this is a little inefficent as the sigmoid_der is calculated eachh time despite z/cost being unchanged
+                }
+            }
+            
+        }
 
         void backprop(){
+            
 
         }
     };
