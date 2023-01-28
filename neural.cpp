@@ -7,6 +7,8 @@ using namespace std;
 class NeuralNetwork;
 
 void test_feedforward();
+void test_back_prop();
+void test(int epochs);
 
 int main(){
     //NeuralNetwork neural;
@@ -16,7 +18,7 @@ int main(){
     //neural.weights2 = ;
     //neural.output;
 
-    test_feedforward();
+    test(20);
 
     return 0;
 }
@@ -86,11 +88,11 @@ class SingleExampleNeuralNetwork{
             return sigmoid(z)*(1-sigmoid(z));
         }
 
-        vector<float> update(vector<float> current_layer, vector<float> prev_layer, vector<vector<float>> current_weights, vector<float> current_bias, vector<float> Y_true){
+        vector<float> update(vector<float> current_layer, vector<float> prev_layer, vector<vector<float>> &current_weights, vector<float> &current_bias, vector<float> Y_true){
             //for each node(j)
             int n = current_layer.size();
             int m = current_weights[0].size();
-            vector<float> new_prev_layer; //need to calc prev layer with new weights and bias to apply update to each layer
+            vector<float> new_prev_layer(m); //need to calc prev layer with new weights and bias to apply update to each layer
 
 
             for (int j=0;j<n;j++){
@@ -104,7 +106,7 @@ class SingleExampleNeuralNetwork{
 
                 for (int k=0;k<m;k++){
                     //update weight
-                    float new_weight = current_weights[j][k] - prev_layer[k]*descent;
+                    float new_weight = current_weights[j][k] - prev_layer[k]*descent; //creating this for efficiency as needs to be applied twice
                     current_weights[j][k] = new_weight;
 
                     //keep track of updated nodes
@@ -113,12 +115,23 @@ class SingleExampleNeuralNetwork{
             }
 
 
-        return new_prev_layer; //may need to return new_prev_layer to use it again
+        return new_prev_layer; //need to return new_prev_layer to use it again
         }
 
         void back_prop(){
             vector<float> pre_layer = update(output, layer1, weights2, bias2, Y_vals);
             vector<float> pre_pre_layer = update(layer1, input, weights1, bias1, pre_layer);
+        }
+
+        void run(int epochs){
+            feedforward();
+
+            for (int i=0;i<epochs;i++){
+                back_prop();
+                feedforward();
+                cout << output[0] << endl;
+            }
+
         }
     };
 
@@ -137,4 +150,42 @@ void test_feedforward(){
 
     for (auto i: neural.output)
     cout << i << ' ';
+}
+
+void test_back_prop(){
+    SingleExampleNeuralNetwork neural;
+
+    //initialising input and weights
+    neural.input = {1.0,2.0,3.0};
+    neural.weights1 = {{1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}};
+    neural.bias1 = {0,0,0,0,0};
+    neural.weights2 = {{1.0,0.5,0.25,0.5,1.0}};
+    neural.bias2 = {0,0,0,0,0};
+    neural.output = {};
+    neural.Y_vals = {0};
+
+    neural.feedforward();
+
+    cout << neural.output[0] << endl;;
+
+    neural.back_prop();
+
+    for (auto i: neural.bias1)
+    cout << i << ' ';
+
+}
+
+void test(int epochs){
+    SingleExampleNeuralNetwork neural;
+
+    //initialising input and weights
+    neural.input = {1.0,2.0,3.0};
+    neural.weights1 = {{1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}};
+    neural.bias1 = {0,0,0,0,0};
+    neural.weights2 = {{1.0,0.5,0.25,0.5,1.0}};
+    neural.bias2 = {0,0,0,0,0};
+    neural.output = {};
+    neural.Y_vals = {0};
+
+    neural.run(epochs);
 }
