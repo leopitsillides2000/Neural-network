@@ -8,7 +8,8 @@ class NeuralNetwork;
 
 void test_feedforward();
 void test_back_prop();
-void test(int epochs);
+void test1(int epochs);
+void test2(int epochs);
 
 int main(){
     //NeuralNetwork neural;
@@ -18,7 +19,7 @@ int main(){
     //neural.weights2 = ;
     //neural.output;
 
-    test(20);
+    test2(20);
 
     return 0;
 }
@@ -26,7 +27,7 @@ int main(){
 class SingleExampleNeuralNetwork{
     public:
 
-        //attributes for the NeuralNetwork class
+        //attributes for the SingleExampleNeuralNetwork class
         vector<float> input; 
         vector<vector<float>> weights1; //dimension (size of hidden layer, size of input)
         vector<float> bias1; // size of hidden layer
@@ -35,7 +36,7 @@ class SingleExampleNeuralNetwork{
         vector<float> layer1;
         vector<float> output; 
         vector<float> Y_vals;
-        float lr = 0.5; //learning rate could be an attribute to class object
+        float lr = 0.2; //learning rate could be an attribute to class object
 
         //activation function: sigmoid
         static float sigmoid(float x){
@@ -97,9 +98,11 @@ class SingleExampleNeuralNetwork{
 
             for (int j=0;j<n;j++){
                 
+
                 //term derived from chain rule
                 //for gradient descent all updated parts(bias/weights/neurons) share this term
-                float descent = 2*lr*sigmoid_der(inv_sigmoid(current_layer[j]))*(current_layer[j]-Y_true[j]); //maybe have to abs last part
+                
+                float descent = 2*lr*sigmoid_der(inv_sigmoid(current_layer[j]))*(current_layer[j] - Y_true[j]); //maybe have to abs last part
 
                 //update bias
                 current_bias[j] = current_bias[j] - descent;
@@ -129,11 +132,73 @@ class SingleExampleNeuralNetwork{
             for (int i=0;i<epochs;i++){
                 back_prop();
                 feedforward();
-                cout << output[0] << endl;
+                
+                for (auto i: output){
+                    cout << i << ' ';
+                }
+                cout << '\n';
             }
 
         }
-    };
+};
+
+class NeuralNetwork: public SingleExampleNeuralNetwork{
+    public:
+        //attributes for NeuralNetwork class
+        vector<vector<float>> all_inputs;
+        vector<vector<float>> all_layer1;
+        vector<vector<float>> all_outputs;
+        vector<vector<float>> all_Y_vals;
+
+        void run(int epochs){
+            
+            int n = all_inputs.size();
+
+            //repeat for number of epochs
+            for (int j=0;j<epochs;j++){
+
+                // for each training example, apply feedforward
+                for (int i=0;i<n;i++){
+                    input = all_inputs[i];
+
+                    feedforward();
+
+                    //update layer1 for back_prop
+                    all_layer1.push_back(layer1);
+                    //update output for back_prop
+                    all_outputs.push_back(output);
+
+                    cout << output[0] << ' ';
+                    cout << output[1] << "\n";
+
+                }
+                cout << "\n";
+
+                // for each training example, apply abck propagation
+                for (int i=0;i<n;i++){
+                    input = all_inputs[i];
+                    Y_vals = all_Y_vals[i];
+                    layer1 = all_layer1[i];
+                    output = all_outputs[i];
+
+                    back_prop();
+
+                }
+            
+            }
+
+            //feedforward one last time
+            for (int i=0;i<n;i++){
+                    input = all_inputs[i];
+
+                    feedforward();
+                    all_outputs[i] = output;
+            }
+            
+        }
+    
+
+};
 
 void test_feedforward(){
     SingleExampleNeuralNetwork neural;
@@ -175,17 +240,32 @@ void test_back_prop(){
 
 }
 
-void test(int epochs){
+void test1(int epochs){
     SingleExampleNeuralNetwork neural;
 
     //initialising input and weights
     neural.input = {1.0,2.0,3.0};
     neural.weights1 = {{1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}};
     neural.bias1 = {0,0,0,0,0};
-    neural.weights2 = {{1.0,0.5,0.25,0.5,1.0}};
-    neural.bias2 = {0,0,0,0,0};
+    neural.weights2 = {{1.0,0.5,0.25,0.5,1.0}, {1.0,0.5,0.25,0.5,1.0}, {1.0,0.5,0.25,0.5,1.0}};
+    neural.bias2 = {0,0,0};
     neural.output = {};
-    neural.Y_vals = {0};
+    neural.Y_vals = {0,1,0};
 
     neural.run(epochs);
+}
+
+void test2(int epochs){
+    NeuralNetwork neural;
+
+    neural.all_inputs = {{1.0,2.0,3.0},{1.0,1.0,0.5},{1.0,1.5,2.0}};
+    neural.weights1 = {{1.0,0.5,0.25}, {-1.0,0.5,0.25}, {1.0,-0.5,0.25}, {1.0,-0.5,0.25}, {1.0,0.3,0.55}, {0.1,0.4,0.75}, {-1.0,-0.5,-0.25}, {-1.0,0.45,0.25}};
+    neural.bias1 = {0.2,0.3,0.4,0.5,-0.1,0.2,-0.5,0.2};
+    neural.weights2 = {{1.0,0.5,0.25,0.5,1.0,-0.3,0.1,0.1}, {1.0,-0.5,0.25,0.5,-1.0,-0.5,0.6,-0.1}};
+    neural.bias2 = {0.1, 0.5};
+    neural.all_outputs = {{},{},{}};
+    neural.all_Y_vals = {{1,0},{0,0},{1,1}};
+
+    neural.run(epochs);
+
 }
