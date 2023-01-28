@@ -59,20 +59,16 @@ class SingleExampleNeuralNetwork{
 
         //outputs a new layer given the original layer and the weights
         static vector<float> apply_weights(vector<float> layer, vector<vector<float>> weights, vector<float> bias){
-            vector<float> new_layer;
+    
+            int n = weights.size();
 
-            int n = weights.size(); //this might be weights[0] e.g. vector that is length of next layer
+            vector<float> new_layer(n);
 
             //for each node in new_layer calculate the dot product of the orignal layer with the weights
             for (int i=0; i<n; i++){
-
-                //new_layer[i] = sigmoid(dot_product(layer, weights[i]));
-                new_layer.insert(new_layer.end(), sigmoid(dot_product(layer, weights[i]) + bias[i])); ///////Vectors are not indexable in c++
-
-                //debug segmentation fault
-                cout << i << ": " << new_layer[i] << endl;
+                new_layer[i] = sigmoid(dot_product(layer, weights[i]) + bias[i]);
             }
-            cout << "after" << endl; //debug
+
             return new_layer;
         }
 
@@ -132,7 +128,9 @@ void test_feedforward(){
     //initialising input and weights
     neural.input = {1.0,2.0,3.0};
     neural.weights1 = {{1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}, {1.0,0.5,0.25}};
+    neural.bias1 = {0,0,0,0,0};
     neural.weights2 = {{1.0,0.5,0.25,0.5,1.0}};
+    neural.bias2 = {0,0,0,0,0};
     neural.output = {};
 
     neural.feedforward();
