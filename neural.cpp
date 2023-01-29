@@ -19,7 +19,7 @@ int main(){
     //neural.weights2 = ;
     //neural.output;
 
-    test2(20);
+    test2(10000);
 
     return 0;
 }
@@ -29,9 +29,9 @@ class SingleExampleNeuralNetwork{
 
         //attributes for the SingleExampleNeuralNetwork class
         vector<float> input; 
-        vector<vector<float>> weights1; //dimension (size of hidden layer, size of input)
+        vector< vector<float> > weights1; //dimension (size of hidden layer, size of input)
         vector<float> bias1; // size of hidden layer
-        vector<vector<float>> weights2; //dimension (size of output, size of hidden layer)
+        vector< vector<float> > weights2; //dimension (size of output, size of hidden layer)
         vector<float> bias2; // size of output
         vector<float> layer1;
         vector<float> output; 
@@ -61,15 +61,15 @@ class SingleExampleNeuralNetwork{
         }
 
         //outputs a new layer given the original layer and the weights
-        static vector<float> apply_weights(vector<float> layer, vector<vector<float>> weights, vector<float> bias){
+        static vector<float> apply_weights(vector<float> layer, vector< vector<float> > weights, vector<float> bias){
     
             int n = weights.size();
 
-            vector<float> new_layer(n);
+            vector<float> new_layer;
 
             //for each node in new_layer calculate the dot product of the orignal layer with the weights
             for (int i=0; i<n; i++){
-                new_layer[i] = sigmoid(dot_product(layer, weights[i]) + bias[i]);
+                new_layer.push_back(sigmoid(dot_product(layer, weights[i]) + bias[i]));
             }
 
             return new_layer;
@@ -81,15 +81,16 @@ class SingleExampleNeuralNetwork{
             //calculates hidden layer
             layer1 = apply_weights(input, weights1, bias1);
             //calculates output layer
+
             output = apply_weights(layer1, weights2, bias2);
-            
         }
 
         static float sigmoid_der(float z){
             return sigmoid(z)*(1-sigmoid(z));
         }
 
-        vector<float> update(vector<float> current_layer, vector<float> prev_layer, vector<vector<float>> &current_weights, vector<float> &current_bias, vector<float> Y_true){
+        
+        vector<float> update(vector<float> current_layer, vector<float> prev_layer, vector< vector<float> > &current_weights, vector<float> &current_bias, vector<float> Y_true){
             //for each node(j)
             int n = current_layer.size();
             int m = current_weights[0].size();
@@ -97,7 +98,6 @@ class SingleExampleNeuralNetwork{
 
 
             for (int j=0;j<n;j++){
-                
 
                 //term derived from chain rule
                 //for gradient descent all updated parts(bias/weights/neurons) share this term
@@ -118,11 +118,13 @@ class SingleExampleNeuralNetwork{
             }
 
 
-        return new_prev_layer; //need to return new_prev_layer to use it again
+            return new_prev_layer; //need to return new_prev_layer to use it again
         }
 
         void back_prop(){
-            vector<float> pre_layer = update(output, layer1, weights2, bias2, Y_vals);
+
+            vector<float> pre_layer = update(output, layer1, weights2, bias2, Y_vals); //this is not working properly - cant tell what the bug is yet
+
             vector<float> pre_pre_layer = update(layer1, input, weights1, bias1, pre_layer);
         }
 
@@ -145,17 +147,22 @@ class SingleExampleNeuralNetwork{
 class NeuralNetwork: public SingleExampleNeuralNetwork{
     public:
         //attributes for NeuralNetwork class
-        vector<vector<float>> all_inputs;
-        vector<vector<float>> all_layer1;
-        vector<vector<float>> all_outputs;
-        vector<vector<float>> all_Y_vals;
+        vector< vector<float> > all_inputs;
+        vector< vector<float> > all_layer1;
+        vector< vector<float> > all_outputs;
+        vector< vector<float> > all_Y_vals;
 
         void run(int epochs){
             
-            int n = all_inputs.size();
+            int n = all_inputs.size(); //number of training examples
 
             //repeat for number of epochs
             for (int j=0;j<epochs;j++){
+
+                //reset after each epoch
+                vector< vector<float> > all_layer1;
+                vector< vector<float> > all_outputs;
+
 
                 // for each training example, apply feedforward
                 for (int i=0;i<n;i++){
@@ -168,13 +175,9 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
                     //update output for back_prop
                     all_outputs.push_back(output);
 
-                    cout << output[0] << ' ';
-                    cout << output[1] << "\n";
-
                 }
-                cout << "\n";
 
-                // for each training example, apply abck propagation
+                // for each training example, apply back propagation
                 for (int i=0;i<n;i++){
                     input = all_inputs[i];
                     Y_vals = all_Y_vals[i];
@@ -182,7 +185,7 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
                     output = all_outputs[i];
 
                     back_prop();
-
+                    
                 }
             
             }
@@ -255,6 +258,8 @@ void test1(int epochs){
     neural.run(epochs);
 }
 
+
+//test for fully functioning 1 hidden layer neural network
 void test2(int epochs){
     NeuralNetwork neural;
 
@@ -267,5 +272,17 @@ void test2(int epochs){
     neural.all_Y_vals = {{1,0},{0,0},{1,1}};
 
     neural.run(epochs);
+
+
+    //this just prints out the output for comparison
+    int n = neural.all_outputs.size();
+    int m = neural.all_outputs[0].size();
+
+    for (int i=0;i<n;i++){
+        for (int j=0;j<m;j++){
+            cout << neural.all_outputs[i][j] << ' ';
+        }
+        cout << "\n";
+    }
 
 }
