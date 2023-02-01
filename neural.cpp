@@ -12,12 +12,6 @@ void test1(int epochs);
 void test2(int epochs);
 
 int main(){
-    //NeuralNetwork neural;
-    //initialising input and weights
-    //neural.input = ;
-    //neural.weights1 = ;
-    //neural.weights2 = ;
-    //neural.output;
 
     test2(10000);
 
@@ -81,10 +75,10 @@ class SingleExampleNeuralNetwork{
             //calculates hidden layer
             layer1 = apply_weights(input, weights1, bias1);
             //calculates output layer
-
             output = apply_weights(layer1, weights2, bias2);
         }
 
+        //sigmoid derivative to be applied in update method - soecifically for the partial derivative of the cost function
         static float sigmoid_der(float z){
             return sigmoid(z)*(1-sigmoid(z));
         }
@@ -101,7 +95,6 @@ class SingleExampleNeuralNetwork{
 
                 //term derived from chain rule
                 //for gradient descent all updated parts(bias/weights/neurons) share this term
-                
                 float descent = 2*lr*sigmoid_der(inv_sigmoid(current_layer[j]))*(current_layer[j] - Y_true[j]); //maybe have to abs last part
 
                 //update bias
@@ -123,18 +116,22 @@ class SingleExampleNeuralNetwork{
 
         void back_prop(){
 
-            vector<float> pre_layer = update(output, layer1, weights2, bias2, Y_vals); //this is not working properly - cant tell what the bug is yet
-
+            //update final weights and biases, and outputs better prediction for penultimate layer nodes
+            vector<float> pre_layer = update(output, layer1, weights2, bias2, Y_vals);
+            //update initial weights and biases
             vector<float> pre_pre_layer = update(layer1, input, weights1, bias1, pre_layer);
         }
 
         void run(int epochs){
+            //initial feedforward
             feedforward();
 
+            //for each epoch, apply back propagation and feedforward again
             for (int i=0;i<epochs;i++){
                 back_prop();
                 feedforward();
                 
+                //output for visual aid
                 for (auto i: output){
                     cout << i << ' ';
                 }
@@ -152,7 +149,7 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
         vector< vector<float> > all_outputs;
         vector< vector<float> > all_Y_vals;
 
-        void run(int epochs){
+        void train(int epochs){
             
             int n = all_inputs.size(); //number of training examples
 
@@ -199,6 +196,19 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
             }
             
         }
+
+        //this applies the trained weights on an unknown example
+        void run_single(vector<float>input_test){
+            input = input_test;
+
+            feedforward();
+
+            int n = output.size();
+            //for printing purposes
+            for (int i=0;i<n;i++){
+                cout << output[i] << ' ';
+            }
+        }
     
 
 };
@@ -219,6 +229,8 @@ void test_feedforward(){
     for (auto i: neural.output)
     cout << i << ' ';
 }
+
+////TESTS////
 
 void test_back_prop(){
     SingleExampleNeuralNetwork neural;
@@ -271,7 +283,7 @@ void test2(int epochs){
     neural.all_outputs = {{},{},{}};
     neural.all_Y_vals = {{1,0},{0,0},{1,1}};
 
-    neural.run(epochs);
+    neural.train(epochs);
 
 
     //this just prints out the output for comparison
@@ -284,5 +296,5 @@ void test2(int epochs){
         }
         cout << "\n";
     }
-
+    neural.run_single({-0.6,0.6,1.2});
 }
