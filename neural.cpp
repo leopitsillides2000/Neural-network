@@ -10,7 +10,7 @@ void test(int epochs, vector<int> hidden_layers, float lr);
 
 int main(){
 
-    test(10000, {16}, 0.1);
+    test(50000, {4,6}, 0.5);
 
     return 0;
 }
@@ -68,16 +68,6 @@ class SingleExampleNeuralNetwork{
             }
         }
 
-
-        /*
-        vector< vector<float> > weights1; //dimension (size of hidden layer, size of input)
-        vector<float> bias1; // size of hidden layer
-        vector< vector<float> > weights2; //dimension (size of output, size of hidden layer)
-        vector<float> bias2; // size of output
-        vector<float> layer1;
-        vector<float> output;
-        */
-
         //activation function: sigmoid
         static float sigmoid(float x){
             return 1/(1+exp(-x));
@@ -120,7 +110,7 @@ class SingleExampleNeuralNetwork{
         void feedforward(){
             int n = hidden_layers.size()-1; //how many times to apply weights and biases (minus 1!)
 
-            vector< vector<float> > test_layers;  //thought this might be needed but gives a segmentation fault when introduced
+            vector< vector<float> > test_layers;
             test_layers.push_back(input);
 
             //for all layers in network
@@ -129,13 +119,6 @@ class SingleExampleNeuralNetwork{
                 test_layers.push_back(apply_weights(test_layers[i], weights[i], biases[i])); //for some reason this is not updating layers
             }
             layers = test_layers;
-            
-            /*
-            //calculates hidden layer
-            layer1 = apply_weights(input, weights1, bias1);
-            //calculates output layer
-            output = apply_weights(layer1, weights2, bias2);
-            */
         }
 
         //sigmoid derivative to be applied in update method - soecifically for the partial derivative of the cost function
@@ -183,12 +166,6 @@ class SingleExampleNeuralNetwork{
             for (int i=n;i>0;i--){
                 pre_layer = update(layers[i], layers[i-1], weights[i-1], biases[i-1], pre_layer); //update weights and baises traversing the network backward
             }
-            /*
-            //update final weights and biases, and outputs better prediction for penultimate layer nodes
-            vector<float> pre_layer = update(output, layer1, weights2, bias2, Y_vals);
-            //update initial weights and biases
-            vector<float> pre_pre_layer = update(layer1, input, weights1, bias1, pre_layer);
-            */
         }
 
         void run(int epochs){
@@ -217,10 +194,11 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
     public:
         //attributes for NeuralNetwork class
         vector< vector<float> > all_inputs;
-        vector< vector< vector<float> > > all_layers;
+        //vector< vector< vector<float> > > all_layers;
         //vector< vector<float> > all_outputs;
         vector< vector<float> > all_Y_vals;
 
+        //this training method applies the feedforward to each training example before aplpying the back propagation
         void train(int epochs){
             //initialise weights and biases
             init_weights_biases(all_inputs[0].size(), all_Y_vals[0].size());
@@ -232,7 +210,7 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
 
                 //reset after each epoch
                 vector< vector< vector<float> > > all_layers;
-                vector< vector<float> > all_outputs;
+                //vector< vector<float> > all_outputs;
 
 
                 // for each training example, apply feedforward
@@ -268,7 +246,46 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
             
         }
 
-        //CANT BE APPLIED CURRENTLY!!
+        //this training method applies the feedforward and backprop to each training before moving to the next one
+        void train2(int epochs){
+            //initialise weights and biases
+            init_weights_biases(all_inputs[0].size(), all_Y_vals[0].size());
+            
+            int n = all_inputs.size(); //number of training examples
+
+            //repeat for number of epochs
+            for (int j=0;j<epochs;j++){
+
+                //reset after each epoch
+                vector< vector< vector<float> > > all_layers;
+                //vector< vector<float> > all_outputs;
+
+
+                // for each training example, apply feedforward
+                for (int i=0;i<n;i++){
+                    input = all_inputs[i];
+
+                    feedforward();
+
+                    input = all_inputs[i];
+                    Y_vals = all_Y_vals[i];
+
+                    back_prop();
+                    
+                }
+            
+            }
+
+            //feedforward one last time
+            for (int i=0;i<n;i++){
+                    input = all_inputs[i];
+
+                    feedforward();
+
+            }
+            
+        }
+
         //this applies the trained weights on an unknown example
         void run_single(vector<float>input_test){
             input = input_test;
