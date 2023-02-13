@@ -1,16 +1,18 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include "dataset.h"
 
 using namespace std;
 
 class NeuralNetwork;
 
-void test(int epochs, vector<int> hidden_layers, float lr);
+void run(int epochs, vector<int> hidden_layers, float lr);
+//vector< vector< vector<float> > > train_test_split(vector< vector<float> > all_inputs, vector< vector<float> > all_Y_vals, float test_percent);
 
 int main(){
 
-    test(50000, {4,6}, 0.5);
+    run(2000, {4,6}, 0.1);
 
     return 0;
 }
@@ -246,7 +248,7 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
             
         }
 
-        //this training method applies the feedforward and backprop to each training before moving to the next one
+        //this training method applies the feedforward and backprop to each training example before moving to the next one
         void train2(int epochs){
             //initialise weights and biases
             init_weights_biases(all_inputs[0].size(), all_Y_vals[0].size());
@@ -286,6 +288,30 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
             
         }
 
+        void test(vector< vector<float> > X_test, vector< vector<float> > y_test){
+            int n = X_test.size(); //number of examples in test set
+
+            for (int i=0;i<n;i++){
+                input = X_test[i];
+
+                feedforward();
+
+                vector<float> test_output = layers.back();
+
+                int m = test_output.size();
+                //for printing purposes
+                for (int j=0;j<m;j++){
+                    cout << test_output[j] << ' ';
+                }
+                cout << '\n';
+                //printing true value
+                for (int j=0;j<m;j++){
+                    cout << y_test[i][j] << ' ';
+                }
+                cout << '\n';
+            }
+        }
+
         //this applies the trained weights on an unknown example
         void run_single(vector<float>input_test){
             input = input_test;
@@ -299,25 +325,54 @@ class NeuralNetwork: public SingleExampleNeuralNetwork{
             for (int i=0;i<n;i++){
                 cout << test_output[i] << ' ';
             }
+            cout << '\n';
         }
     
 
 };
+/*
+vector< vector< vector<float> > > train_test_split(vector< vector<float> > all_inputs, vector< vector<float> > all_Y_vals, float test_percent){
+    int n = all_inputs.size(); //number of training examples
+    int test_size = n*test_percent; //I assume this will round down to nearest int
 
+    vector< vector<float> > X_test;
+    vector< vector<float> > y_test;
+    vector< vector<float> > X_train;
+    vector< vector<float> > y_train;
+
+    for (int i=0;i<test_size;i++){
+        X_test.push_back(all_inputs[i]);
+        y_test.push_back(all_Y_vals[i]);
+    }
+    
+    for (int j=test_size;j<n;j++){
+        X_train.push_back(all_inputs[j]);
+        y_train.push_back(all_Y_vals[j]);
+    }
+
+    return {X_train, X_test, y_train, y_test};
+}
+*/
 
 ////TESTS////
 
-void test(int epochs, vector<int> hidden_layers, float lr){
+void run(int epochs, vector<int> hidden_layers, float lr){
     NeuralNetwork neural;
+
+    vector< vector<float> > all_inputs = {{1.3,-0.6,0.5}, {0.3,1.1,-0.2}, {1.0,1.0,0.4}, {0.9,0.1,-0.3}};
+    vector< vector<float> > all_Y_vals = {{0,1},{1,0},{0,1},{1,0}};
 
     //attributes to initialise
     neural.lr = lr; //learning rate
     neural.hidden_layers = hidden_layers; //hidden layers[i] = no of nodes in hidden layer i
-    neural.all_inputs = {{1.3,-0.6,0.5}, {0.3,1.1,-0.2}, {1.0,1.0,0.4}, {0.9,0.1,-0.3}}; //4 training examples with 3 inputs each
-    neural.all_Y_vals = {{0,1},{1,0},{0,1},{1,0}};
 
-    neural.train(epochs);
 
-    neural.run_single({0.4,1.0,-0.2});
+    //ISSUES with 64 and 32 bits - will have a look at below tomorrow
+    //neural.all_inputs = X_train;
+    //neural.all_Y_vals = Y_train;
 
+    //neural.train(epochs);
+
+    //neural.test(X_test, Y_test);
+    
 }
